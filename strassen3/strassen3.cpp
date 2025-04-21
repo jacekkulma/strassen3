@@ -2,11 +2,15 @@
 //
 
 #include "strassen3.h"
+#include "matrix.h"
 
 using namespace std;
 
 int main()
 {
-	cout << "Hello CMake." << endl;
+	Matrix<float> a(0.0f), b(0.0f);
+	cin >> a >> b;
+	auto c = a + b;
+	cout << c;
 	return 0;
 }

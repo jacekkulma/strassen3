@@ -3,7 +3,7 @@
 #
 
 # Add source to this project's executable.
-add_executable (strassen3 "strassen3.cpp" "strassen3.h")
+add_executable (strassen3 "strassen3.cpp" "strassen3.h" "matrix.h")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET strassen3 PROPERTY CXX_STANDARD 20)
