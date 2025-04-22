@@ -10,7 +10,9 @@ int main()
 {
 	Matrix<float> a(0.0f), b(0.0f);
 	cin >> a >> b;
-	auto c = a + b;
+	auto c = a * b;
 	cout << c;
+	a *= b;
+	cout << a;
 	return 0;
 }

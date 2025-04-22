@@ -118,6 +118,72 @@ public:
 		return lhs;
 	}
 
+	Matrix<T>& operator-=(const Matrix<T>& rhs)& {
+		for (int row = 0; row < m_size; row++) {
+			for (int col = 0; col < m_size; col++) {
+				set(row, col, get(row, col) - rhs.get(row, col));
+			}
+		}
+		return *this;
+	}
+
+	friend Matrix<T> operator-(Matrix<T> lhs, const Matrix<T>& rhs) {
+		lhs -= rhs;
+		return lhs;
+	}
+
+	Matrix<T>& operator*=(const T& scalar)& {
+		for (int row = 0; row < m_size; row++) {
+			for (int col = 0; col < m_size; col++) {
+				set(row, col, get(row, col) * scalar);
+			}
+		}
+		return *this;
+	}
+
+	friend Matrix<T> operator*(Matrix<T> lhs, const T& scalar) {
+		lhs *= scalar;
+		return lhs;
+	}
+
+	friend Matrix<T> operator*(const T& scalar, Matrix<T> rhs) {
+		rhs *= scalar;
+		return rhs;
+	}
+
+	Matrix<T>& operator*=(const Matrix<T>& rhs)& {
+		Matrix<T> result(m_padding);
+		result.resize(m_size);
+
+		for (int i = 0; i < m_size; i++) {
+			for (int j = 0; j < m_size; j++) {
+				T sum = 0;
+				for (int k = 0; k < m_size; k++) {
+					sum += get(i, k) * rhs.get(k, j);
+				}
+				result.set(i, j, sum);
+			}
+		}
+		*this = result;
+		return *this;
+	}
+
+	friend Matrix<T> operator*(const Matrix<T>& lhs, const Matrix<T>& rhs) {
+		Matrix<T> result(lhs.m_padding);
+		result.resize(lhs.m_size);
+
+		for (int i = 0; i < lhs.m_size; i++) {
+			for (int j = 0; j < lhs.m_size; j++) {
+				T sum = 0;
+				for (int k = 0; k < lhs.m_size; k++) {
+					sum += lhs.get(i, k) * rhs.get(k, j);
+				}
+				result.set(i, j, sum);
+			}
+		}
+		return result;
+	}
+
 	friend std::ostream& operator<<(std::ostream& os, const Matrix<T>& matrix)
 	{
 		for (int row = 0; row < matrix.m_size; row++) {
