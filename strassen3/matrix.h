@@ -7,9 +7,6 @@
 template<class T>
 class Matrix {
 public:
-	Matrix(T padding) : Matrix(nullptr, padding, 0, 0, 0, 0, 0, 0)
-	{ }
-
 	Matrix() : Matrix(nullptr, T{}, 0, 0, 0, 0, 0, 0) {}
 
 	Matrix(const Matrix<T>& matrix) 
@@ -17,7 +14,7 @@ public:
 		*this = matrix;
 	}
 
-	Matrix(int size)
+	Matrix(int size) : m_isDataOwner(false)
 	{
 		resize(size);
 	}
@@ -164,26 +161,11 @@ public:
 	}
 
 	Matrix<T>& operator*=(const Matrix<T>& rhs)& {
-		Matrix<T> result(m_padding);
-		result.resize(m_size);
-
-		for (int i = 0; i < m_size; i++) {
-			for (int j = 0; j < m_size; j++) {
-				T sum = 0;
-				for (int k = 0; k < m_size; k++) {
-					sum += get(i, k) * rhs.get(k, j);
-				}
-				result.set(i, j, sum);
-			}
-		}
-		*this = result;
-		return *this;
+		return *this = (*this) * rhs;
 	}
 
 	friend Matrix<T> operator*(const Matrix<T>& lhs, const Matrix<T>& rhs) {
-		Matrix<T> result(lhs.m_padding);
-		result.resize(lhs.m_size);
-
+		Matrix<T> result(lhs.m_size);
 		for (int i = 0; i < lhs.m_size; i++) {
 			for (int j = 0; j < lhs.m_size; j++) {
 				T sum = 0;
@@ -196,44 +178,27 @@ public:
 		return result;
 	}
 
-	Matrix<T> strassen3(const Matrix<T>& other) const {
+	friend Matrix<T> strassen3(const Matrix<T>& lhs, const Matrix<T>& rhs) {
 		// when matrices degenerated to scalar (m_size = 1) just "normal" multiplication
-		if (m_size == 1) {
-			Matrix<T> result(m_padding);
-			result.resize(1);
-			result.set(0, 0, get(0, 0) * other.get(0, 0));
+		if (lhs.m_size == 1) {
+			Matrix<T> result(1);
+			result.set(0, 0, lhs.get(0, 0) * rhs.get(0, 0));
 			return result;
 		}
 
 		// divide matrices to 9 (3x3) submatrices
-		Matrix<Matrix<T>> A, B;
-		/*A.resize(m_size);
-		B.resize(m_size);*/
-		A = this->partition(3);
-		B = other.partition(3);
+		auto A = lhs.partition(3);
+		auto A11 = A.get(0, 0);
+		auto A12 = A.get(0, 1);
+		auto A13 = A.get(0, 2);
+		auto A21 = A.get(1, 0);
+		auto A22 = A.get(1, 1);
+		auto A23 = A.get(1, 2);
+		auto A31 = A.get(2, 0);
+		auto A32 = A.get(2, 1);
+		auto A33 = A.get(2, 2);
 
-		//return A.get(0, 0);
-		Matrix<T> A11, A12, A13, A21, A22, A23, A31, A32, A33;
-		A11.resize(m_size / 3);
-		A12.resize(m_size / 3);
-		A13.resize(m_size / 3);
-		A21.resize(m_size / 3);
-		A22.resize(m_size / 3);
-		A23.resize(m_size / 3);
-		A31.resize(m_size / 3);
-		A32.resize(m_size / 3);
-		A33.resize(m_size / 3);
-
-		A11 = A.get(0, 0);
-		A12 = A.get(0, 1);
-		A13 = A.get(0, 2);
-		A21 = A.get(1, 0);
-		A22 = A.get(1, 1);
-		A23 = A.get(1, 2);
-		A31 = A.get(2, 0);
-		A32 = A.get(2, 1);
-		A33 = A.get(2, 2);
-
+		auto B = rhs.partition(3);
 		auto B11 = B.get(0, 0);
 		auto B12 = B.get(0, 1);
 		auto B13 = B.get(0, 2);
@@ -245,29 +210,29 @@ public:
 		auto B33 = B.get(2, 2);
 
 		// calculate M_i submatrices (23 multiplications)
-		auto M1 = (A11 + A12 + A13 - A21 - A22 - A32 - A33).strassen3(B22);
-		auto M2 = (A11 - A21).strassen3(-B12 + B22);
-		auto M3 = A22.strassen3(-B11 + B12 + B21 - B22 - B23 - B31 + B33);
-		auto M4 = (-A11 + A21 + A22).strassen3(B11 - B12 + B22);
-		auto M5 = (A21 + A22).strassen3(-B11 + B12);
-		auto M6 = A11.strassen3(B11);
-		auto M7 = (-A11 + A31 + A32).strassen3(B11 - B13 + B23);
-		auto M8 = (-A11 + A31).strassen3(B13 - B23);
-		auto M9 = (A31 + A32).strassen3(-B11 + B13);
-		auto M10 = (A11 + A12 + A13 - A22 - A23 - A31 - A32).strassen3(B23);
-		auto M11 = A32.strassen3(-B11 + B13 + B21 - B22 - B23 - B31 + B32);
-		auto M12 = (-A13 + A32 + A33).strassen3(B22 + B31 - B32);
-		auto M13 = (A13 - A33).strassen3(B22 - B32);
-		auto M14 = A13.strassen3(B31);
-		auto M15 = (A32 + A33).strassen3(-B31 + B32);
-		auto M16 = (-A13 + A22 + A23).strassen3(B23 + B31 - B33);
-		auto M17 = (A13 - A23).strassen3(B23 - B33);
-		auto M18 = (A22 + A23).strassen3(-B31 + B33);
-		auto M19 = A12.strassen3(B21);
-		auto M20 = A23.strassen3(B32);
-		auto M21 = A21.strassen3(B13);
-		auto M22 = A31.strassen3(B12);
-		auto M23 = A33.strassen3(B33);
+		auto M1 = strassen3(A11 + A12 + A13 - A21 - A22 - A32 - A33, B22);
+		auto M2 = strassen3(A11 - A21, -B12 + B22);
+		auto M3 = strassen3(A22, -B11 + B12 + B21 - B22 - B23 - B31 + B33);
+		auto M4 = strassen3(-A11 + A21 + A22, B11 - B12 + B22);
+		auto M5 = strassen3(A21 + A22, -B11 + B12);
+		auto M6 = strassen3(A11, B11);
+		auto M7 = strassen3(-A11 + A31 + A32, B11 - B13 + B23);
+		auto M8 = strassen3(-A11 + A31, B13 - B23);
+		auto M9 = strassen3(A31 + A32, -B11 + B13);
+		auto M10 = strassen3(A11 + A12 + A13 - A22 - A23 - A31 - A32, B23);
+		auto M11 = strassen3(A32, -B11 + B13 + B21 - B22 - B23 - B31 + B32);
+		auto M12 = strassen3(-A13 + A32 + A33, B22 + B31 - B32);
+		auto M13 = strassen3(A13 - A33, B22 - B32);
+		auto M14 = strassen3(A13, B31);
+		auto M15 = strassen3(A32 + A33, -B31 + B32);
+		auto M16 = strassen3(-A13 + A22 + A23, B23 + B31 - B33);
+		auto M17 = strassen3(A13 - A23, B23 - B33);
+		auto M18 = strassen3(A22 + A23, -B31 + B33);
+		auto M19 = strassen3(A12, B21);
+		auto M20 = strassen3(A23, B32);
+		auto M21 = strassen3(A21, B13);
+		auto M22 = strassen3(A31, B12);
+		auto M23 = strassen3(A33, B33);
 
 		// calculated C_ij submatrices
 		auto C11 = M6 + M14 + M19;
@@ -281,10 +246,9 @@ public:
 		auto C33 = M6 + M7 + M8 + M9 + M23;
 
 		// build result matrix
-		Matrix<T> result(m_padding);
-		result.resize(m_size);
+		Matrix<T> result(lhs.m_size);
 
-		int blockSize = m_size / 3;
+		int blockSize = lhs.m_size / 3;
 
 		for (int row = 0; row < blockSize; row++) {
 			for (int col = 0; col < blockSize; col++) {
