@@ -10,14 +10,13 @@
 template<class T>
 class Matrix {
 public:
-	Matrix(const Matrix<T>& matrix) : m_isDataOwner(false)
+	Matrix(const Matrix<T>& matrix) : m_isDataOwner(false), m_dataSize(0)
 	{
-        std::cout << "TestCopyCtr\n";
         resize(matrix.m_size);
         *this = matrix;
 	}
 
-	Matrix(T padding = 0, int size = 0) : m_padding(padding), m_isDataOwner(false)
+	Matrix(T padding = 0, int size = 0) : m_padding(padding), m_isDataOwner(false), m_dataSize(0)
 	{
 		resize(size);
 	}
@@ -37,13 +36,11 @@ public:
 
 		m_padding = matrix.m_padding;
 
-        std::cout << "CopyAssignmentInit\n";
         for (int row = 0; row < m_size; row++) {
             for (int col = 0; col < m_size; col++) {
                 set(row, col, matrix.get(row, col));
             }
         }
-        std::cout << "CopyAssignmentOk\n";
 
 		return *this;
 	}
@@ -58,6 +55,8 @@ public:
         m_size = matrix.m_size;
 
         if (m_isDataOwner) delete[] m_data;
+		m_data = matrix.m_data;
+
         m_isDataOwner = matrix.m_isDataOwner;
         matrix.m_isDataOwner = false;
 
@@ -83,7 +82,6 @@ public:
 	{
 		row += m_rowsStart;
 		col += m_colsStart;
-        std::cout << "Get(" << row << " " << col << " " << m_dataSize << " " << m_rowsEnd << " " << m_colsEnd << ")\n";
 		if (row >= m_rowsEnd || col >= m_colsEnd) return m_padding;
 		return m_data[row * m_dataSize + col];
 	}
@@ -189,7 +187,7 @@ public:
 	}
 
 	friend Matrix<T> operator*(const Matrix<T>& lhs, const Matrix<T>& rhs) {
-		Matrix<T> result(lhs.m_size);
+		Matrix<T> result(lhs.m_padding, lhs.m_size);
 		for (int i = 0; i < lhs.m_size; i++) {
 			for (int j = 0; j < lhs.m_size; j++) {
 				T sum = 0;
@@ -210,10 +208,8 @@ public:
 			return result;
 		}
 
-        std::cout << "Test1\n";
 		// divide matrices to 9 (3x3) submatrices
 		auto A = lhs.partition(3);
-        std::cout << "Test1.5\n";
 		const auto& A11 = A.get(0, 0);
 		const auto& A12 = A.get(0, 1);
 		const auto& A13 = A.get(0, 2);
@@ -224,7 +220,6 @@ public:
 		const auto& A32 = A.get(2, 1);
 		const auto& A33 = A.get(2, 2);
 
-        std::cout << "Test2\n";
 		auto B = rhs.partition(3);
 		const auto& B11 = B.get(0, 0);
 		const auto& B12 = B.get(0, 1);
@@ -236,7 +231,6 @@ public:
 		const auto& B32 = B.get(2, 1);
 		const auto& B33 = B.get(2, 2);
 
-        std::cout << "Test3\n";
 		// calculate M_i submatrices (23 multiplications)
 		auto M1 = strassen3(A11 + A12 + A13 - A21 - A22 - A32 - A33, B22);
 		auto M2 = strassen3(A11 - A21, -B12 + B22);
@@ -262,7 +256,6 @@ public:
 		auto M22 = strassen3(A31, B12);
 		auto M23 = strassen3(A33, B33);
 
-        std::cout << "Test4\n";
 		// calculated C_ij submatrices
 		Matrix<T> result(lhs.m_padding, lhs.m_size);
 

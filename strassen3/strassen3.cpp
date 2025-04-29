@@ -40,9 +40,9 @@ int main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
-	Matrix<float> a, b;
-	aFile >> a;
-    bFile >> b;
+	Matrix<float> A, B;
+	aFile >> A;
+    bFile >> B;
     
     aFile.close();
     bFile.close();
@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
         printHelpMessage(argv[0]);
         return EXIT_FAILURE;
     }
-    cFile << a + b;
+    cFile << strassen3(A, B);
 
     cFile.close();
 
