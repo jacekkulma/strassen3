@@ -1,20 +1,23 @@
 #pragma once
 
 #include <iostream>
+#include <sstream>
+#include <stdexcept>
 #include <vector>
 #include <cstring>
+#include <algorithm>
 
 template<class T>
 class Matrix {
 public:
-	Matrix() : Matrix(nullptr, T{}, 0, 0, 0, 0, 0, 0) {}
-
-	Matrix(const Matrix<T>& matrix) 
+	Matrix(const Matrix<T>& matrix) : m_isDataOwner(false)
 	{
-		*this = matrix;
+        std::cout << "TestCopyCtr\n";
+        resize(matrix.m_size);
+        *this = matrix;
 	}
 
-	Matrix(int size) : m_isDataOwner(false)
+	Matrix(T padding = 0, int size = 0) : m_padding(padding), m_isDataOwner(false)
 	{
 		resize(size);
 	}
@@ -30,22 +33,33 @@ public:
 	}
 
 	Matrix<T>& operator=(const Matrix<T>& matrix) {
+        if (m_size != matrix.m_size) throw std::runtime_error("Matrix sizes do not match.");
+
 		m_padding = matrix.m_padding;
-		m_dataSize = matrix.m_dataSize;
-		m_isDataOwner = matrix.m_isDataOwner;
-		m_rowsStart = matrix.m_rowsStart;
-		m_colsStart = matrix.m_colsStart;
-		m_rowsEnd = matrix.m_rowsEnd;
-		m_colsEnd = matrix.m_colsEnd;
-		m_size = matrix.m_size;
 
-		if (!matrix.m_isDataOwner) {
-			m_data = matrix.m_data;
-			return *this;
-		}
+        std::cout << "CopyAssignmentInit\n";
+        for (int row = 0; row < m_size; row++) {
+            for (int col = 0; col < m_size; col++) {
+                set(row, col, matrix.get(row, col));
+            }
+        }
+        std::cout << "CopyAssignmentOk\n";
 
-		m_data = new T[m_dataSize * m_dataSize];
-		std::memcpy(m_data, matrix.m_data, m_dataSize * m_dataSize * sizeof(T));
+		return *this;
+	}
+
+	Matrix<T>& operator=(Matrix<T>&& matrix) {
+		m_padding = matrix.m_padding;
+        m_dataSize = matrix.m_dataSize;
+        m_rowsStart = matrix.m_rowsStart;
+        m_colsStart = matrix.m_colsStart;
+        m_rowsEnd = matrix.m_rowsEnd;
+        m_colsEnd = matrix.m_colsEnd;
+        m_size = matrix.m_size;
+
+        if (m_isDataOwner) delete[] m_data;
+        m_isDataOwner = matrix.m_isDataOwner;
+        matrix.m_isDataOwner = false;
 
 		return *this;
 	}
@@ -65,14 +79,15 @@ public:
 		if (m_dataSize < m_size) reserve(m_size);
 	}
 	
-	T get(int row, int col) const
+	const T& get(int row, int col) const
 	{
 		row += m_rowsStart;
 		col += m_colsStart;
+        std::cout << "Get(" << row << " " << col << " " << m_dataSize << " " << m_rowsEnd << " " << m_colsEnd << ")\n";
 		if (row >= m_rowsEnd || col >= m_colsEnd) return m_padding;
 		return m_data[row * m_dataSize + col];
 	}
-	
+
 	void set(int row, int col, T value)
 	{
 		row += m_rowsStart;
@@ -82,10 +97,19 @@ public:
 		}
 	}
 
+	void emplace(int row, int col, T&& value)
+	{
+		row += m_rowsStart;
+		col += m_colsStart;
+		if (row < m_rowsEnd && col < m_colsEnd) {
+			m_data[row * m_dataSize + col] = std::move(value);
+		}
+	}
+
 	Matrix<Matrix<T>> partition(int count) const
 	{
 		int partitionedSize = (m_size + count - 1) / count;
-		Matrix<Matrix<T>> matrix(count);
+		Matrix<Matrix<T>> matrix(Matrix<T>(m_padding), count);
 		for (int row = 0; row < count; row++) {
 			for (int col = 0; col < count; col++) {
 				auto rowsStart = m_rowsStart + row * partitionedSize;
@@ -97,7 +121,7 @@ public:
 					std::min({ colsStart + partitionedSize, m_colsEnd }),
 					partitionedSize
 				);
-				matrix.set(row, col, submatrix);
+				matrix.emplace(row, col, std::move(submatrix));
 			}
 		}
 		return matrix;
@@ -181,34 +205,38 @@ public:
 	friend Matrix<T> strassen3(const Matrix<T>& lhs, const Matrix<T>& rhs) {
 		// when matrices degenerated to scalar (m_size = 1) just "normal" multiplication
 		if (lhs.m_size == 1) {
-			Matrix<T> result(1);
+			Matrix<T> result(lhs.m_padding, 1);
 			result.set(0, 0, lhs.get(0, 0) * rhs.get(0, 0));
 			return result;
 		}
 
+        std::cout << "Test1\n";
 		// divide matrices to 9 (3x3) submatrices
 		auto A = lhs.partition(3);
-		auto A11 = A.get(0, 0);
-		auto A12 = A.get(0, 1);
-		auto A13 = A.get(0, 2);
-		auto A21 = A.get(1, 0);
-		auto A22 = A.get(1, 1);
-		auto A23 = A.get(1, 2);
-		auto A31 = A.get(2, 0);
-		auto A32 = A.get(2, 1);
-		auto A33 = A.get(2, 2);
+        std::cout << "Test1.5\n";
+		const auto& A11 = A.get(0, 0);
+		const auto& A12 = A.get(0, 1);
+		const auto& A13 = A.get(0, 2);
+		const auto& A21 = A.get(1, 0);
+		const auto& A22 = A.get(1, 1);
+		const auto& A23 = A.get(1, 2);
+		const auto& A31 = A.get(2, 0);
+		const auto& A32 = A.get(2, 1);
+		const auto& A33 = A.get(2, 2);
 
+        std::cout << "Test2\n";
 		auto B = rhs.partition(3);
-		auto B11 = B.get(0, 0);
-		auto B12 = B.get(0, 1);
-		auto B13 = B.get(0, 2);
-		auto B21 = B.get(1, 0);
-		auto B22 = B.get(1, 1);
-		auto B23 = B.get(1, 2);
-		auto B31 = B.get(2, 0);
-		auto B32 = B.get(2, 1);
-		auto B33 = B.get(2, 2);
+		const auto& B11 = B.get(0, 0);
+		const auto& B12 = B.get(0, 1);
+		const auto& B13 = B.get(0, 2);
+		const auto& B21 = B.get(1, 0);
+		const auto& B22 = B.get(1, 1);
+		const auto& B23 = B.get(1, 2);
+		const auto& B31 = B.get(2, 0);
+		const auto& B32 = B.get(2, 1);
+		const auto& B33 = B.get(2, 2);
 
+        std::cout << "Test3\n";
 		// calculate M_i submatrices (23 multiplications)
 		auto M1 = strassen3(A11 + A12 + A13 - A21 - A22 - A32 - A33, B22);
 		auto M2 = strassen3(A11 - A21, -B12 + B22);
@@ -234,37 +262,20 @@ public:
 		auto M22 = strassen3(A31, B12);
 		auto M23 = strassen3(A33, B33);
 
+        std::cout << "Test4\n";
 		// calculated C_ij submatrices
-		auto C11 = M6 + M14 + M19;
-		auto C12 = M1 + M4 + M5 + M6 + M12 + M14 + M15;
-		auto C13 = M6 + M7 + M9 + M10 + M14 + M16 + M18;
-		auto C21 = M2 + M3 + M4 + M6 + M14 + M16 + M17;
-		auto C22 = M2 + M4 + M5 + M6 + M20;
-		auto C23 = M14 + M16 + M17 + M18 + M21;
-		auto C31 = M6 + M7 + M8 + M11 + M12 + M13 + M14;
-		auto C32 = M12 + M13 + M14 + M15 + M22;
-		auto C33 = M6 + M7 + M8 + M9 + M23;
+		Matrix<T> result(lhs.m_padding, lhs.m_size);
 
-		// build result matrix
-		Matrix<T> result(lhs.m_size);
-
-		int blockSize = lhs.m_size / 3;
-
-		for (int row = 0; row < blockSize; row++) {
-			for (int col = 0; col < blockSize; col++) {
-				result.set(row, col, C11.get(row, col));
-				result.set(row, col + blockSize, C12.get(row, col));
-				result.set(row, col + 2 * blockSize, C13.get(row, col));
-
-				result.set(row + blockSize, col, C21.get(row, col));
-				result.set(row + blockSize, col + blockSize, C22.get(row, col));
-				result.set(row + blockSize, col + 2 * blockSize, C23.get(row, col));
-
-				result.set(row + 2 * blockSize, col, C31.get(row, col));
-				result.set(row + 2 * blockSize, col + blockSize, C32.get(row, col));
-				result.set(row + 2 * blockSize, col + 2 * blockSize, C33.get(row, col));
-			}
-		}
+        auto C = result.partition(3);
+        C.set(0, 0, M6 + M14 + M19);
+        C.set(0, 1, M1 + M4 + M5 + M6 + M12 + M14 + M15);
+        C.set(0, 2, M6 + M7 + M9 + M10 + M14 + M16 + M18);
+        C.set(1, 0, M2 + M3 + M4 + M6 + M14 + M16 + M17);
+        C.set(1, 1, M2 + M4 + M5 + M6 + M20);
+        C.set(1, 2, M14 + M16 + M17 + M18 + M21);
+        C.set(2, 0, M6 + M7 + M8 + M11 + M12 + M13 + M14);
+        C.set(2, 1, M12 + M13 + M14 + M15 + M22);
+        C.set(2, 2, M6 + M7 + M8 + M9 + M23);
 
 		return result;
 	}
@@ -282,17 +293,26 @@ public:
 
 	friend std::istream& operator>>(std::istream& is, Matrix<T>& matrix)
 	{
-		// TODO
-		matrix.resize(3);
+        int size = 0, row = 0;
+        for (std::string line; std::getline(is, line);) {
+            std::istringstream lineStream(line);
+            std::vector<T> values;
+            T value;
 
-		for (int row = 0; row < matrix.m_size; row++) {
-			for (int col = 0; col < matrix.m_size; col++) {
-				T value{};
-				is >> value;
-				matrix.set(row, col, value);
-			}
-		}
+            while (lineStream >> value) values.push_back(value);
 
+            if (size == 0 && values.size() > 0) {
+                size = values.size();
+                matrix.resize(size);
+            }
+            if (size != values.size()) throw std::runtime_error("Could not read matrix: incorrect number of columns.");
+
+            for (int col = 0; col < size; col++) matrix.set(row, col, values[col]);
+
+            if (size > 0) row++;
+            if (size > 0 && row >= size) return is;
+        }
+        if (row < size) throw std::runtime_error("Could not read matrix: incorrect number of rows.");
 		return is;
 	}
 
