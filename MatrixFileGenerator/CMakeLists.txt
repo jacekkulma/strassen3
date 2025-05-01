@@ -3,7 +3,7 @@
 #
 
 # Add source to this project's executable.
-add_executable (MatrixFileGenerator "matrixFileGenerator.cpp")
+add_executable (MatrixFileGenerator "matrixFileGenerator.cpp" "args.hxx")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET MatrixFileGenerator PROPERTY CXX_STANDARD 20)
