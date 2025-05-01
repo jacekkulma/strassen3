@@ -7,19 +7,9 @@
 #include <iomanip>
 #include <cmath>
 
-using namespace std;
+#include "args.hxx"
 
-void printHelpMessage(const char* programName) {
-    std::cerr << "*** MatrixFileGenerator ***" << std::endl;
-    std::cerr << "Generates text file with n x n matrix data in standard format." << std::endl;
-    std::cerr << "USAGE: " << programName << " n fileName minValue maxValue filesToGenerate precision" << std::endl;
-    std::cerr << "\tn\t\tMatrix size. Needs to be specified." << std::endl;
-    std::cerr << "\tfileName\tOutput file with matrix data in standard format. Either with or without '.txt' extension.\n\t\t\tNeeds to be specified." << std::endl;
-    std::cerr << "\tminValue\tMin. value for each matrix element. Defaults to -10 if not specified." << std::endl;
-    std::cerr << "\tmaxValue\tMax. value for each matrix element. Defaults to 10 if not specified." << std::endl;
-    std::cerr << "\tfilesToGenerate\tNumber of matrix files to generate. Defaults to 1.\n\t\t\tIf greater than 1, file number appended to file name." << std::endl;
-    std::cerr << "\tprecision\tDecimal precision. Each matrix element rounded to 'precision' decimal points.\n\t\t\tDefaults to 0 if not specified." << std::endl;
-}
+using namespace std;
 
 float generateRandomFloat(float start, float end, int precision) {
     std::random_device rd;
@@ -60,37 +50,45 @@ std::string ensureTxtExtension(const std::string& filename) {
 
 int main(int argc, char* argv[])
 {
-    // default values
-    int mCount = 1, precision = 0;
-    float start = -10, end = 10;
+    args::ArgumentParser parser("Generates text file(s) with n x n matrix data in standard format.");
+    args::HelpFlag helpFlag(parser, "help", "Display this help menu.", { 'h', "help" });
+    args::Group requiredGroup(parser, "Required arguments:", args::Group::Validators::All);
+    args::ValueFlag<std::string> fileNameFlag(requiredGroup, "Output file(s) name", "Name for output file(s) with matrix data in standard format. Can be given either with or without '.txt' extension.", { "fileName" });
+    args::ValueFlag<unsigned int> mSizeFlag(requiredGroup, "Matrix size", "Matrix size (dimension). If lesser than 1, empty file(s) will be generated.", { "mSize" });
+    args::Group optionalGroup(parser, "Optional arguments:");
+    args::ValueFlag<float> minValueFlag(parser, "Min. value", "Min. value for each matrix element. Defaults to -10.", { "minValue" }, -10.0f);
+    args::ValueFlag<float> maxValueFlag(parser, "Max. value", "Max. value for each matrix element. Defaults to 10.", { "maxValue" }, 10.0f);
+    args::ValueFlag<unsigned int> mCountFlag(parser, "Number of files", "Number of files to generate. Defaults to 1. If greater than 1, file number appended to each file name.", { "mCount" }, 1);
+    args::ValueFlag<unsigned int> precisionFlag(parser, "Decimal precison", "Decimal precision. Each matrix element rounded to 'precision' decimal points.", { "precison" }, 0);
 
-    // get values if specified
-    if (argc == 4) {
-        start = std::stoi(argv[3]);
+    try
+    {
+        parser.ParseCLI(argc, argv);
     }
-    else if (argc == 5) {
-        start = std::stoi(argv[3]);
-        end = std::stoi(argv[4]);
+    catch (args::Help)
+    {
+        std::cout << parser;
+        return EXIT_SUCCESS;
     }
-    else if (argc == 6) {
-        start = std::stoi(argv[3]);
-        end = std::stoi(argv[4]);
-        mCount = std::stoi(argv[5]);
+    catch (args::ParseError e)
+    {
+        std::cerr << e.what() << std::endl;
+        std::cerr << parser;
+        return EXIT_FAILURE;
     }
-    else if (argc == 7) {
-        start = std::stoi(argv[3]);
-        end = std::stoi(argv[4]);
-        mCount = std::stoi(argv[5]);
-        precision = std::stoi(argv[6]);
-    }
-    else if (argc != 3) {
-        printHelpMessage(argv[0]);
+    catch (args::ValidationError e)
+    {
+        std::cerr << e.what() << std::endl;
+        std::cerr << parser;
         return EXIT_FAILURE;
     }
 
-    // matrix size and file name need to be always given
-    int mSize = std::stoi(argv[1]);
-    std::string fileName(argv[2]);
+    int mSize = args::get(mSizeFlag);
+    int mCount = args::get(mCountFlag);
+    std::string fileName = args::get(fileNameFlag);
+    int precision = args::get(precisionFlag);
+    float start = args::get(minValueFlag);
+    float end = args::get(maxValueFlag);
 
     // loop for each file
     for (int i = 0; i < mCount; i++) {
@@ -103,7 +101,6 @@ int main(int argc, char* argv[])
         std::ofstream File(currentFileName);
         if (!File.is_open()) {
             std::cerr << "Could not open file " << currentFileName << std::endl;
-            printHelpMessage(argv[0]);
             return EXIT_FAILURE;
         }
 
