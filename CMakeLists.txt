@@ -13,3 +13,4 @@ project ("strassen3")
 
 # Include sub-projects.
 add_subdirectory ("strassen3")
+add_subdirectory ("MatrixFileGenerator")
