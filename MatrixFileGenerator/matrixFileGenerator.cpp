@@ -11,14 +11,14 @@ using namespace std;
 
 void printHelpMessage(const char* programName) {
     std::cerr << "*** MatrixFileGenerator ***" << std::endl;
-    std::cerr << "Generates text file containing n x n matrix." << std::endl;
+    std::cerr << "Generates text file with n x n matrix data in standard format." << std::endl;
     std::cerr << "USAGE: " << programName << " n fileName minValue maxValue filesToGenerate precision" << std::endl;
-    std::cerr << "\tn\t\tMatrix size." << std::endl;
-    std::cerr << "\tfileName\tOutput file with matrix data in standard format." << std::endl;
-    std::cerr << "\tminValue\tMin. value for each matrix element. Defaults to -10." << std::endl;
-    std::cerr << "\tmaxValue\tMax. value for each matrix element. Defaults to 10." << std::endl;
-    std::cerr << "\tfilesToGenerate\tNumber of matrix files to generate. Defaults to 1. If greater than 1, file number appended to file name." << std::endl;
-    std::cerr << "\tprecision\tDecimal precision. Each matrix element rounded to 'precision' decimal points. Defaults to 0." << std::endl;
+    std::cerr << "\tn\t\tMatrix size. Needs to be specified." << std::endl;
+    std::cerr << "\tfileName\tOutput file with matrix data in standard format. Either with or without '.txt' extension.\n\t\t\tNeeds to be specified." << std::endl;
+    std::cerr << "\tminValue\tMin. value for each matrix element. Defaults to -10 if not specified." << std::endl;
+    std::cerr << "\tmaxValue\tMax. value for each matrix element. Defaults to 10 if not specified." << std::endl;
+    std::cerr << "\tfilesToGenerate\tNumber of matrix files to generate. Defaults to 1.\n\t\t\tIf greater than 1, file number appended to file name." << std::endl;
+    std::cerr << "\tprecision\tDecimal precision. Each matrix element rounded to 'precision' decimal points.\n\t\t\tDefaults to 0 if not specified." << std::endl;
 }
 
 float generateRandomFloat(float start, float end, int precision) {
