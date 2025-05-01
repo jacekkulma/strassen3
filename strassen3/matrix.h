@@ -126,6 +126,7 @@ public:
 	}
 
 	Matrix<T>& operator+=(const Matrix<T>& rhs)& {
+		if (m_size != rhs.m_size) throw std::runtime_error("Could not add matrices: operand sizes do not match.");
 		for (int row = 0; row < m_size; row++) {
 			for (int col = 0; col < m_size; col++) {
 				set(row, col, get(row, col) + rhs.get(row, col));
@@ -140,6 +141,7 @@ public:
 	}
 
 	Matrix<T>& operator-=(const Matrix<T>& rhs)& {
+		if (m_size != rhs.m_size) throw std::runtime_error("Could not subtract matrices: operand sizes do not match.");
 		for (int row = 0; row < m_size; row++) {
 			for (int col = 0; col < m_size; col++) {
 				set(row, col, get(row, col) - rhs.get(row, col));
@@ -183,10 +185,12 @@ public:
 	}
 
 	Matrix<T>& operator*=(const Matrix<T>& rhs)& {
+		if (m_size != rhs.m_size) throw std::runtime_error("Could not multiply matrices: operand sizes do not match.");
 		return *this = (*this) * rhs;
 	}
 
 	friend Matrix<T> operator*(const Matrix<T>& lhs, const Matrix<T>& rhs) {
+		if (lhs.m_size != rhs.m_size) throw std::runtime_error("Could not multiply matrices: operand sizes do not match.");
 		Matrix<T> result(lhs.m_padding, lhs.m_size);
 		for (int i = 0; i < lhs.m_size; i++) {
 			for (int j = 0; j < lhs.m_size; j++) {
@@ -201,6 +205,8 @@ public:
 	}
 
 	friend Matrix<T> strassen3(const Matrix<T>& lhs, const Matrix<T>& rhs) {
+		if (lhs.m_size != rhs.m_size) throw std::runtime_error("Could not multiply matrices: operand sizes do not match.");
+
 		// when matrices degenerated to scalar (m_size = 1) just "normal" multiplication
 		if (lhs.m_size == 1) {
 			Matrix<T> result(lhs.m_padding, 1);
