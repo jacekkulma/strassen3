@@ -11,11 +11,8 @@
 
 using namespace std;
 
-float generateRandomFloat(float start, float end, int precision) {
-    std::random_device rd;
-    std::mt19937 gen(rd());
+float generateRandomFloat(float start, float end, int precision, std::mt19937& gen) {
     std::uniform_real_distribution<float> dis(start, end);
-
     float raw = dis(gen);
 
     float factor = std::pow(10.0f, precision);
@@ -60,6 +57,7 @@ int main(int argc, char* argv[])
     args::ValueFlag<float> maxValueFlag(optionalGroup, "Max. value", "Max. value for each matrix element. Defaults to 10.", { "maxValue" }, 10.0f);
     args::ValueFlag<unsigned int> mCountFlag(optionalGroup, "Number of files", "Number of files to generate. Defaults to 1. If greater than 1, file number appended to each file name.", { "mCount" }, 1);
     args::ValueFlag<unsigned int> precisionFlag(optionalGroup, "Decimal precision", "Decimal precision. Each matrix element rounded to 'precision' decimal points.", { "precision" }, 0);
+    args::ValueFlag<unsigned int> seedFlag(optionalGroup, "Random seed value", "Random seed value. If not specified generated randomly during runtime.", { "seed" }, 0);
 
     try
     {
@@ -89,6 +87,16 @@ int main(int argc, char* argv[])
     int precision = args::get(precisionFlag);
     float start = args::get(minValueFlag);
     float end = args::get(maxValueFlag);
+    int seed = args::get(seedFlag);
+
+    std::mt19937 gen;
+    if (seed == 0) {
+        std::random_device rd;
+        gen.seed(rd());
+    }
+    else {
+        gen.seed(seed);
+    }
 
     // loop for each file
     for (int i = 0; i < mCount; i++) {
@@ -107,7 +115,7 @@ int main(int argc, char* argv[])
         // generate file
         for (int row = 0; row < mSize; row++) {
             for (int col = 0; col < mSize; col++) {
-                float number = generateRandomFloat(start, end, precision);
+                float number = generateRandomFloat(start, end, precision, gen);     
                 if (precision == 0 && number == -0.0f) number = 0.0f;
                 File << std::fixed << std::setprecision(precision) << number << " ";
             }
