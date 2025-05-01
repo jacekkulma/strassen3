@@ -56,10 +56,10 @@ int main(int argc, char* argv[])
     args::ValueFlag<std::string> fileNameFlag(requiredGroup, "Output file(s) name", "Name for output file(s) with matrix data in standard format. Can be given either with or without '.txt' extension.", { "fileName" });
     args::ValueFlag<unsigned int> mSizeFlag(requiredGroup, "Matrix size", "Matrix size (dimension). If lesser than 1, empty file(s) will be generated.", { "mSize" });
     args::Group optionalGroup(parser, "Optional arguments:");
-    args::ValueFlag<float> minValueFlag(parser, "Min. value", "Min. value for each matrix element. Defaults to -10.", { "minValue" }, -10.0f);
-    args::ValueFlag<float> maxValueFlag(parser, "Max. value", "Max. value for each matrix element. Defaults to 10.", { "maxValue" }, 10.0f);
-    args::ValueFlag<unsigned int> mCountFlag(parser, "Number of files", "Number of files to generate. Defaults to 1. If greater than 1, file number appended to each file name.", { "mCount" }, 1);
-    args::ValueFlag<unsigned int> precisionFlag(parser, "Decimal precison", "Decimal precision. Each matrix element rounded to 'precision' decimal points.", { "precison" }, 0);
+    args::ValueFlag<float> minValueFlag(optionalGroup, "Min. value", "Min. value for each matrix element. Defaults to -10.", { "minValue" }, -10.0f);
+    args::ValueFlag<float> maxValueFlag(optionalGroup, "Max. value", "Max. value for each matrix element. Defaults to 10.", { "maxValue" }, 10.0f);
+    args::ValueFlag<unsigned int> mCountFlag(optionalGroup, "Number of files", "Number of files to generate. Defaults to 1. If greater than 1, file number appended to each file name.", { "mCount" }, 1);
+    args::ValueFlag<unsigned int> precisionFlag(optionalGroup, "Decimal precison", "Decimal precision. Each matrix element rounded to 'precision' decimal points.", { "precison" }, 0);
 
     try
     {
@@ -108,6 +108,7 @@ int main(int argc, char* argv[])
         for (int row = 0; row < mSize; row++) {
             for (int col = 0; col < mSize; col++) {
                 float number = generateRandomFloat(start, end, precision);
+                if (precision == 0 && number == -0.0f) number = 0.0f;
                 File << std::fixed << std::setprecision(precision) << number << " ";
             }
             File << "\n";
