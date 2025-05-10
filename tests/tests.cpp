@@ -41,5 +41,16 @@ static void BM_Strassen3(benchmark::State& state) {
     }
 }
 
-BENCHMARK(BM_Trivial)->RangeMultiplier(2)->Range(8, 1024)->Setup(Setup);
-BENCHMARK(BM_Strassen3)->RangeMultiplier(2)->Range(8, 1024)->Setup(Setup);
+static void BM_Strassen3_32(benchmark::State& state) {
+    const auto size = state.range(0);
+    const auto A = getUniformMatrix(size, -10.0f, 10.0f);
+    const auto B = getUniformMatrix(size, -10.0f, 10.0f);
+
+    for (auto _ : state) {
+        auto C = strassen3(A, B, 32);
+    }
+}
+
+BENCHMARK(BM_Trivial)->RangeMultiplier(2)->Range(8, 512)->Setup(Setup);
+BENCHMARK(BM_Strassen3)->RangeMultiplier(2)->Range(8, 512)->Setup(Setup);
+BENCHMARK(BM_Strassen3_32)->RangeMultiplier(2)->Range(8, 512)->Setup(Setup);

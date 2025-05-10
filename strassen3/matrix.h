@@ -77,7 +77,7 @@ public:
 		m_rowsEnd = m_colsEnd = m_size = size;
 		if (m_dataSize < m_size) reserve(m_size);
 	}
-	
+
 	const T& get(int row, int col) const
 	{
 		row += m_rowsStart;
@@ -86,7 +86,7 @@ public:
 		return m_data[row * m_dataSize + col];
 	}
 
-	void set(int row, int col, T value)
+	void set(int row, int col, const T& value)
 	{
 		row += m_rowsStart;
 		col += m_colsStart;
@@ -204,15 +204,11 @@ public:
 		return result;
 	}
 
-	friend Matrix<T> strassen3(const Matrix<T>& lhs, const Matrix<T>& rhs) {
+	friend Matrix<T> strassen3(const Matrix<T>& lhs, const Matrix<T>& rhs, int threshold = 1) {
 		if (lhs.m_size != rhs.m_size) throw std::runtime_error("Could not multiply matrices: operand sizes do not match.");
 
 		// when matrices degenerated to scalar (m_size = 1) just "normal" multiplication
-		if (lhs.m_size == 1) {
-			Matrix<T> result(lhs.m_padding, 1);
-			result.set(0, 0, lhs.get(0, 0) * rhs.get(0, 0));
-			return result;
-		}
+		if (lhs.m_size <= threshold) return lhs * rhs;
 
 		// divide matrices to 9 (3x3) submatrices
 		auto A = lhs.partition(3);
@@ -238,43 +234,45 @@ public:
 		const auto& B33 = B.get(2, 2);
 
 		// calculate M_i submatrices (23 multiplications)
-		auto M1 = strassen3(A11 + A12 + A13 - A21 - A22 - A32 - A33, B22);
-		auto M2 = strassen3(A11 - A21, -B12 + B22);
-		auto M3 = strassen3(A22, -B11 + B12 + B21 - B22 - B23 - B31 + B33);
-		auto M4 = strassen3(-A11 + A21 + A22, B11 - B12 + B22);
-		auto M5 = strassen3(A21 + A22, -B11 + B12);
-		auto M6 = strassen3(A11, B11);
-		auto M7 = strassen3(-A11 + A31 + A32, B11 - B13 + B23);
-		auto M8 = strassen3(-A11 + A31, B13 - B23);
-		auto M9 = strassen3(A31 + A32, -B11 + B13);
-		auto M10 = strassen3(A11 + A12 + A13 - A22 - A23 - A31 - A32, B23);
-		auto M11 = strassen3(A32, -B11 + B13 + B21 - B22 - B23 - B31 + B32);
-		auto M12 = strassen3(-A13 + A32 + A33, B22 + B31 - B32);
-		auto M13 = strassen3(A13 - A33, B22 - B32);
-		auto M14 = strassen3(A13, B31);
-		auto M15 = strassen3(A32 + A33, -B31 + B32);
-		auto M16 = strassen3(-A13 + A22 + A23, B23 + B31 - B33);
-		auto M17 = strassen3(A13 - A23, B23 - B33);
-		auto M18 = strassen3(A22 + A23, -B31 + B33);
-		auto M19 = strassen3(A12, B21);
-		auto M20 = strassen3(A23, B32);
-		auto M21 = strassen3(A21, B13);
-		auto M22 = strassen3(A31, B12);
-		auto M23 = strassen3(A33, B33);
+		Matrix<T> buf(A11.m_padding, A11.m_size);
+		Matrix<T> buf2(B11.m_padding, B11.m_size);
+		auto M1 = strassen3(buf.acc(A11, A12, A13).sub(A21, A22, A32, A33), B22, threshold);
+		auto M2 = strassen3(buf.acc(A11).sub(A21), buf2.acc(B22).sub(B12), threshold);
+		auto M3 = strassen3(A22, buf2.acc(B12, B21, B33).sub(B11, B22, B23, B31), threshold);
+		auto M4 = strassen3(buf.acc(A21, A22).sub(A11), buf2.acc(B11, B22).sub(B12), threshold);
+		auto M5 = strassen3(buf.acc(A21, A22), buf2.acc(B12).sub(B11), threshold);
+		auto M6 = strassen3(A11, B11, threshold);
+		auto M7 = strassen3(buf.acc(A31, A32).sub(A11), buf2.acc(B11, B23).sub(B13), threshold);
+		auto M8 = strassen3(buf.acc(A31).sub(A11), buf2.acc(B13).sub(B23), threshold);
+		auto M9 = strassen3(buf.acc(A31, A32), buf2.acc(B13).sub(B11), threshold);
+		auto M10 = strassen3(buf.acc(A11, A12, A13).sub(A22, A23, A31, A32), B23, threshold);
+		auto M11 = strassen3(A32, buf2.acc(B13, B21, B32).sub(B11, B22, B23, B31), threshold);
+		auto M12 = strassen3(buf.acc(A32, A33).sub(A13), buf2.acc(B22, B31).sub(B32), threshold);
+		auto M13 = strassen3(buf.acc(A13).sub(A33), buf2.acc(B22).sub(B32), threshold);
+		auto M14 = strassen3(A13, B31, threshold);
+		auto M15 = strassen3(buf.acc(A32, A33), buf2.acc(B32).sub(B31), threshold);
+		auto M16 = strassen3(buf.acc(A22, A23).sub(A13), buf2.acc(B23, B31).sub(B33), threshold);
+		auto M17 = strassen3(buf.acc(A13).sub(A23), buf2.acc(B23).sub(B33), threshold);
+		auto M18 = strassen3(buf.acc(A22, A23), buf2.acc(B33).sub(B31), threshold);
+		auto M19 = strassen3(A12, B21, threshold);
+		auto M20 = strassen3(A23, B32, threshold);
+		auto M21 = strassen3(A21, B13, threshold);
+		auto M22 = strassen3(A31, B12, threshold);
+		auto M23 = strassen3(A33, B33, threshold);
 
 		// calculated C_ij submatrices
 		Matrix<T> result(lhs.m_padding, lhs.m_size);
 
         auto C = result.partition(3);
-        C.set(0, 0, M6 + M14 + M19);
-        C.set(0, 1, M1 + M4 + M5 + M6 + M12 + M14 + M15);
-        C.set(0, 2, M6 + M7 + M9 + M10 + M14 + M16 + M18);
-        C.set(1, 0, M2 + M3 + M4 + M6 + M14 + M16 + M17);
-        C.set(1, 1, M2 + M4 + M5 + M6 + M20);
-        C.set(1, 2, M14 + M16 + M17 + M18 + M21);
-        C.set(2, 0, M6 + M7 + M8 + M11 + M12 + M13 + M14);
-        C.set(2, 1, M12 + M13 + M14 + M15 + M22);
-        C.set(2, 2, M6 + M7 + M8 + M9 + M23);
+        C.set(0, 0, buf.acc(M6, M14, M19));
+        C.set(0, 1, buf.acc(M1, M4, M5, M6, M12, M14, M15));
+        C.set(0, 2, buf.acc(M6, M7, M9, M10, M14, M16, M18));
+        C.set(1, 0, buf.acc(M2, M3, M4, M6, M14, M16, M17));
+        C.set(1, 1, buf.acc(M2, M4, M5, M6, M20));
+        C.set(1, 2, buf.acc(M14, M16, M17, M18, M21));
+        C.set(2, 0, buf.acc(M6, M7, M8, M11, M12, M13, M14));
+        C.set(2, 1, buf.acc(M12, M13, M14, M15, M22));
+        C.set(2, 2, buf.acc(M6, M7, M8, M9, M23));
 
 		return result;
 	}
@@ -325,4 +323,22 @@ private:
 	int m_rowsEnd;
 	int m_colsEnd;
 	int m_size;
+
+	Matrix<T>& acc(const Matrix<T>& tail) {
+		return *this = tail;
+	}
+
+	template<typename... Args>
+	Matrix<T>& acc(const Matrix<T>& head, const Args&... args) {
+		return acc(args...) += head;
+	}
+
+	Matrix<T>& sub(const Matrix<T>& tail) {
+		return *this -= tail;
+	}
+
+	template<typename... Args>
+	Matrix<T>& sub(const Matrix<T>& head, const Args&... args) {
+		return sub(args...) -= head;
+	}
 };
