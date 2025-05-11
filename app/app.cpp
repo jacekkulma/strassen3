@@ -20,6 +20,9 @@ void printHelpMessage(const char* programName) {
         std::setw(14) << "(optional)" << "Print this help message" << std::endl;
     std::cerr << std::setw(4) << "" << std::left << std::setw(8) << "--triv" << 
         std::setw(14) << "(optional)" << "Use trivial matrix multiplication algorithm" << std::endl;
+    std::cerr << std::setw(4) << "" << std::left << std::setw(8) << "--thres" << 
+        std::setw(14) << "(optional)" << "Positive integer value (default: 1) for a threshold between Strassen and trivial algorithms. " <<
+        "Submatrices of sizes not greater than the value of the threshold are multiplied using trivial algorithm." << std::endl;
 }
 
 int main(int argc, char* argv[])
@@ -34,6 +37,7 @@ int main(int argc, char* argv[])
     }
 
     auto useStrassen = true;
+    int threshold = 1;
     for (int i = 1; i < argc - 3; i++) {
         if (strncmp(argv[i], "--help", 7) == 0) {
 			printHelpMessage(programName.c_str());
@@ -42,6 +46,16 @@ int main(int argc, char* argv[])
 
         if (strncmp(argv[i], "--triv", 7) == 0) {
             useStrassen = false;
+            continue;
+        }
+
+        if (strncmp(argv[i], "--thres", 8) == 0) {
+            if ((threshold = std::atoi(argv[i + 1])) < 1) {
+                std::cerr << "Expected a positive integer threshold value. Got: " << argv[i + 1] << std::endl;
+				printHelpMessage(programName.c_str());
+				return EXIT_FAILURE;
+            }
+            i++;
             continue;
         }
 
@@ -83,7 +97,7 @@ int main(int argc, char* argv[])
     }
 
     try {
-        cFile << (useStrassen ? strassen3(A, B) : (A * B));
+        cFile << (useStrassen ? strassen3(A, B, threshold) : (A * B));
     }
     catch (const std::runtime_error& error) {
         std::cerr << error.what() << std::endl;
