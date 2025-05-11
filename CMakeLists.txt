@@ -11,6 +11,11 @@ endif()
 
 project ("strassen3")
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Include sub-projects.
+add_subdirectory ("external")
 add_subdirectory ("strassen3")
+add_subdirectory ("app")
 add_subdirectory ("MatrixFileGenerator")
+add_subdirectory ("tests")

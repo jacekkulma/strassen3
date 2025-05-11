@@ -1,0 +1,3 @@
+set(BENCHMARK_DOWNLOAD_DEPENDENCIES ON)
+set(BENCHMARK_ENABLE_GTEST_TESTS OFF)
+add_subdirectory("google-benchmark")
