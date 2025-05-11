@@ -32,6 +32,7 @@ public:
 	}
 
 	Matrix<T>& operator=(const Matrix<T>& matrix) {
+		if (m_size == 0) resize(matrix.m_size);
         if (m_size != matrix.m_size) throw std::runtime_error("Matrix sizes do not match.");
 
 		m_padding = matrix.m_padding;
