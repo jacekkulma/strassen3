@@ -15,3 +15,5 @@ CMakeUserPresets.json
 /out/build/x64-release
 build
 .cache
+/tests_visualization/plots
+/tests_visualization/tests_data

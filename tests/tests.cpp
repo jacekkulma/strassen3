@@ -51,6 +51,43 @@ static void BM_Strassen3_32(benchmark::State& state) {
     }
 }
 
-BENCHMARK(BM_Trivial)->RangeMultiplier(2)->Range(8, 512)->Setup(Setup);
-BENCHMARK(BM_Strassen3)->RangeMultiplier(2)->Range(8, 512)->Setup(Setup);
-BENCHMARK(BM_Strassen3_32)->RangeMultiplier(2)->Range(8, 512)->Setup(Setup);
+//BENCHMARK(BM_Trivial)->RangeMultiplier(2)->Range(8, 2048)->Setup(Setup);
+//BENCHMARK(BM_Strassen3)->RangeMultiplier(2)->Range(8, 2048)->Setup(Setup);
+//BENCHMARK(BM_Strassen3_32)->RangeMultiplier(2)->Range(8, 2048)->Setup(Setup);
+
+BENCHMARK(BM_Trivial)
+    ->Arg(100)
+    ->Arg(200)
+    ->Arg(300)
+    ->Arg(400)
+    ->Arg(500)
+    ->Arg(600)
+    ->Arg(700)
+    ->Arg(800)
+    ->Arg(900)
+    ->Arg(1000)
+    ->Setup(Setup);
+BENCHMARK(BM_Strassen3)
+->Arg(100)
+->Arg(200)
+->Arg(300)
+->Arg(400)
+->Arg(500)
+->Arg(600)
+->Arg(700)
+->Arg(800)
+->Arg(900)
+->Arg(1000)
+->Setup(Setup);
+BENCHMARK(BM_Strassen3_32)
+->Arg(100)
+->Arg(200)
+->Arg(300)
+->Arg(400)
+->Arg(500)
+->Arg(600)
+->Arg(700)
+->Arg(800)
+->Arg(900)
+->Arg(1000)
+->Setup(Setup);
