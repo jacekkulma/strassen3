@@ -79,6 +79,14 @@ public:
 		if (m_dataSize < m_size) reserve(m_size);
 	}
 
+	inline T& operator()(int row, int col) {
+		return m_data[row * m_dataSize + col];
+	}
+
+	inline const T& operator()(int row, int col) const {
+		return m_data[row * m_dataSize + col];
+	}
+
 	const T& get(int row, int col) const
 	{
 		row += m_rowsStart;
@@ -226,26 +234,26 @@ public:
 
 		// divide matrices to 9 (3x3) submatrices
 		auto A = lhs.partition(3);
-		const auto& A11 = A.m_data[0];
-		const auto& A12 = A.m_data[1];
-		const auto& A13 = A.m_data[2];
-		const auto& A21 = A.m_data[3];
-		const auto& A22 = A.m_data[4];
-		const auto& A23 = A.m_data[5];
-		const auto& A31 = A.m_data[6];
-		const auto& A32 = A.m_data[7];
-		const auto& A33 = A.m_data[8];
+		const auto& A11 = A(0, 0);
+		const auto& A12 = A(0, 1);
+		const auto& A13 = A(0, 2);
+		const auto& A21 = A(1, 0);
+		const auto& A22 = A(1, 1);
+		const auto& A23 = A(1, 2);
+		const auto& A31 = A(2, 0);
+		const auto& A32 = A(2, 1);
+		const auto& A33 = A(2, 2);
 
 		auto B = rhs.partition(3);
-		const auto& B11 = B.m_data[0];
-		const auto& B12 = B.m_data[1];
-		const auto& B13 = B.m_data[2];
-		const auto& B21 = B.m_data[3];
-		const auto& B22 = B.m_data[4];
-		const auto& B23 = B.m_data[5];
-		const auto& B31 = B.m_data[6];
-		const auto& B32 = B.m_data[7];
-		const auto& B33 = B.m_data[8];
+		const auto& B11 = B(0, 0);
+		const auto& B12 = B(0, 1);
+		const auto& B13 = B(0, 2);
+		const auto& B21 = B(1, 0);
+		const auto& B22 = B(1, 1);
+		const auto& B23 = B(1, 2);
+		const auto& B31 = B(2, 0);
+		const auto& B32 = B(2, 1);
+		const auto& B33 = B(2, 2);
 
 		// calculate M_i submatrices (23 multiplications)
 		Matrix<T> buf(A11.m_padding, A11.m_size);
@@ -278,15 +286,15 @@ public:
 		Matrix<T> result(lhs.m_padding, lhs.m_size);
 
         auto C = result.partition(3);
-        C.m_data[0] = buf.acc(M6, M14, M19);
-        C.m_data[1] = buf.acc(M1, M4, M5, M6, M12, M14, M15);
-        C.m_data[2] = buf.acc(M6, M7, M9, M10, M14, M16, M18);
-        C.m_data[3] = buf.acc(M2, M3, M4, M6, M14, M16, M17);
-        C.m_data[4] = buf.acc(M2, M4, M5, M6, M20);
-        C.m_data[5] = buf.acc(M14, M16, M17, M18, M21);
-        C.m_data[6] = buf.acc(M6, M7, M8, M11, M12, M13, M14);
-        C.m_data[7] = buf.acc(M12, M13, M14, M15, M22);
-        C.m_data[8] = buf.acc(M6, M7, M8, M9, M23);
+        C(0, 0) = buf.acc(M6, M14, M19);
+        C(0, 1) = buf.acc(M1, M4, M5, M6, M12, M14, M15);
+        C(0, 2) = buf.acc(M6, M7, M9, M10, M14, M16, M18);
+        C(1, 0) = buf.acc(M2, M3, M4, M6, M14, M16, M17);
+        C(1, 1) = buf.acc(M2, M4, M5, M6, M20);
+        C(1, 2) = buf.acc(M14, M16, M17, M18, M21);
+        C(2, 0) = buf.acc(M6, M7, M8, M11, M12, M13, M14);
+        C(2, 1) = buf.acc(M12, M13, M14, M15, M22);
+        C(2, 2) = buf.acc(M6, M7, M8, M9, M23);
 
 		return result;
 	}
