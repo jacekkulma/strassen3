@@ -79,6 +79,14 @@ public:
 		if (m_dataSize < m_size) reserve(m_size);
 	}
 
+	inline T& operator()(int row, int col) {
+		return m_data[row * m_dataSize + col];
+	}
+
+	inline const T& operator()(int row, int col) const {
+		return m_data[row * m_dataSize + col];
+	}
+
 	const T& get(int row, int col) const
 	{
 		row += m_rowsStart;
@@ -128,11 +136,13 @@ public:
 
 	Matrix<T>& operator+=(const Matrix<T>& rhs)& {
 		if (m_size != rhs.m_size) throw std::runtime_error("Could not add matrices: operand sizes do not match.");
-		for (int row = 0; row < m_size; row++) {
-			for (int col = 0; col < m_size; col++) {
-				set(row, col, get(row, col) + rhs.get(row, col));
-			}
-		}
+        auto rowCount = std::min({ m_rowsEnd - m_rowsStart, m_size });
+        auto colCount = std::min({ m_colsEnd - m_colsStart, m_size });
+        for (int row = 0; row < rowCount; row++) {
+            for (int col = 0; col < colCount; col++) {
+                m_data[(m_rowsStart + row) * m_dataSize + (m_colsStart + col)] += rhs.get(row, col);
+            }
+        }
 		return *this;
 	}
 
@@ -143,21 +153,25 @@ public:
 
 	Matrix<T>& operator-=(const Matrix<T>& rhs)& {
 		if (m_size != rhs.m_size) throw std::runtime_error("Could not subtract matrices: operand sizes do not match.");
-		for (int row = 0; row < m_size; row++) {
-			for (int col = 0; col < m_size; col++) {
-				set(row, col, get(row, col) - rhs.get(row, col));
-			}
-		}
+        auto rowCount = std::min({ m_rowsEnd - m_rowsStart, m_size });
+        auto colCount = std::min({ m_colsEnd - m_colsStart, m_size });
+        for (int row = 0; row < rowCount; row++) {
+            for (int col = 0; col < colCount; col++) {
+                m_data[(m_rowsStart + row) * m_dataSize + (m_colsStart + col)] -= rhs.get(row, col);
+            }
+        }
 		return *this;
 	}
 
 	Matrix<T> operator-() const {
 		Matrix<T> result(*this);
-		for (int row = 0; row < m_size; row++) {
-			for (int col = 0; col < m_size; col++) {
-				result.set(row, col, -get(row, col));
-			}
-		}
+        auto rowCount = std::min({ m_rowsEnd - m_rowsStart, m_size });
+        auto colCount = std::min({ m_colsEnd - m_colsStart, m_size });
+        for (int row = 0; row < rowCount; row++) {
+            for (int col = 0; col < colCount; col++) {
+                result.set(row, col, -m_data[(m_rowsStart + row) * m_dataSize + (m_colsStart + col)]);
+            }
+        }
 		return result;
 	}
 
@@ -167,11 +181,13 @@ public:
 	}
 
 	Matrix<T>& operator*=(const T& scalar)& {
-		for (int row = 0; row < m_size; row++) {
-			for (int col = 0; col < m_size; col++) {
-				set(row, col, get(row, col) * scalar);
-			}
-		}
+        auto rowCount = std::min({ m_rowsEnd - m_rowsStart, m_size });
+        auto colCount = std::min({ m_colsEnd - m_colsStart, m_size });
+        for (int row = 0; row < rowCount; row++) {
+            for (int col = 0; col < colCount; col++) {
+                m_data[(m_rowsStart + row) * m_dataSize + (m_colsStart + col)] += scalar;
+            }
+        }
 		return *this;
 	}
 
@@ -208,31 +224,36 @@ public:
 	friend Matrix<T> strassen3(const Matrix<T>& lhs, const Matrix<T>& rhs, int threshold = 1) {
 		if (lhs.m_size != rhs.m_size) throw std::runtime_error("Could not multiply matrices: operand sizes do not match.");
 
+        if (lhs.m_rowsStart >= lhs.m_rowsEnd || lhs.m_colsStart >= lhs.m_colsEnd ||
+            rhs.m_rowsStart >= rhs.m_rowsEnd || rhs.m_colsStart >= rhs.m_colsEnd) {
+            return Matrix<T>(nullptr, lhs.m_padding, 0, 0, 0, 0, 0, lhs.m_size);
+        }
+
 		// when matrices degenerated to scalar (m_size = 1) just "normal" multiplication
 		if (lhs.m_size <= threshold) return lhs * rhs;
 
 		// divide matrices to 9 (3x3) submatrices
 		auto A = lhs.partition(3);
-		const auto& A11 = A.get(0, 0);
-		const auto& A12 = A.get(0, 1);
-		const auto& A13 = A.get(0, 2);
-		const auto& A21 = A.get(1, 0);
-		const auto& A22 = A.get(1, 1);
-		const auto& A23 = A.get(1, 2);
-		const auto& A31 = A.get(2, 0);
-		const auto& A32 = A.get(2, 1);
-		const auto& A33 = A.get(2, 2);
+		const auto& A11 = A(0, 0);
+		const auto& A12 = A(0, 1);
+		const auto& A13 = A(0, 2);
+		const auto& A21 = A(1, 0);
+		const auto& A22 = A(1, 1);
+		const auto& A23 = A(1, 2);
+		const auto& A31 = A(2, 0);
+		const auto& A32 = A(2, 1);
+		const auto& A33 = A(2, 2);
 
 		auto B = rhs.partition(3);
-		const auto& B11 = B.get(0, 0);
-		const auto& B12 = B.get(0, 1);
-		const auto& B13 = B.get(0, 2);
-		const auto& B21 = B.get(1, 0);
-		const auto& B22 = B.get(1, 1);
-		const auto& B23 = B.get(1, 2);
-		const auto& B31 = B.get(2, 0);
-		const auto& B32 = B.get(2, 1);
-		const auto& B33 = B.get(2, 2);
+		const auto& B11 = B(0, 0);
+		const auto& B12 = B(0, 1);
+		const auto& B13 = B(0, 2);
+		const auto& B21 = B(1, 0);
+		const auto& B22 = B(1, 1);
+		const auto& B23 = B(1, 2);
+		const auto& B31 = B(2, 0);
+		const auto& B32 = B(2, 1);
+		const auto& B33 = B(2, 2);
 
 		// calculate M_i submatrices (23 multiplications)
 		Matrix<T> buf(A11.m_padding, A11.m_size);
@@ -265,15 +286,15 @@ public:
 		Matrix<T> result(lhs.m_padding, lhs.m_size);
 
         auto C = result.partition(3);
-        C.set(0, 0, buf.acc(M6, M14, M19));
-        C.set(0, 1, buf.acc(M1, M4, M5, M6, M12, M14, M15));
-        C.set(0, 2, buf.acc(M6, M7, M9, M10, M14, M16, M18));
-        C.set(1, 0, buf.acc(M2, M3, M4, M6, M14, M16, M17));
-        C.set(1, 1, buf.acc(M2, M4, M5, M6, M20));
-        C.set(1, 2, buf.acc(M14, M16, M17, M18, M21));
-        C.set(2, 0, buf.acc(M6, M7, M8, M11, M12, M13, M14));
-        C.set(2, 1, buf.acc(M12, M13, M14, M15, M22));
-        C.set(2, 2, buf.acc(M6, M7, M8, M9, M23));
+        C(0, 0) = buf.acc(M6, M14, M19);
+        C(0, 1) = buf.acc(M1, M4, M5, M6, M12, M14, M15);
+        C(0, 2) = buf.acc(M6, M7, M9, M10, M14, M16, M18);
+        C(1, 0) = buf.acc(M2, M3, M4, M6, M14, M16, M17);
+        C(1, 1) = buf.acc(M2, M4, M5, M6, M20);
+        C(1, 2) = buf.acc(M14, M16, M17, M18, M21);
+        C(2, 0) = buf.acc(M6, M7, M8, M11, M12, M13, M14);
+        C(2, 1) = buf.acc(M12, M13, M14, M15, M22);
+        C(2, 2) = buf.acc(M6, M7, M8, M9, M23);
 
 		return result;
 	}
