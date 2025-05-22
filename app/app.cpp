@@ -31,14 +31,10 @@ int main(int argc, char* argv[])
     std::filesystem::path path(argv[0]);
     auto programName = path.filename().string();
 
-    if (argc < 4) {
-        printHelpMessage(programName.c_str());
-        return EXIT_FAILURE;
-    }
-
     auto useStrassen = true;
-    int threshold = 1;
-    for (int i = 1; i < argc - 3; i++) {
+    int threshold = 1, pathCount = 0;
+    std::string paths[3];
+    for (int i = 1; i < argc; i++) {
         if (strncmp(argv[i], "--help", 7) == 0) {
 			printHelpMessage(programName.c_str());
 			return EXIT_SUCCESS;
@@ -50,6 +46,12 @@ int main(int argc, char* argv[])
         }
 
         if (strncmp(argv[i], "--thres", 8) == 0) {
+            if (i + 1 >= argc) {
+                std::cerr << "Expected a positive integer threshold value." << std::endl;
+				printHelpMessage(programName.c_str());
+				return EXIT_FAILURE;
+            }
+
             if ((threshold = std::atoi(argv[i + 1])) < 1) {
                 std::cerr << "Expected a positive integer threshold value. Got: " << argv[i + 1] << std::endl;
 				printHelpMessage(programName.c_str());
@@ -59,25 +61,31 @@ int main(int argc, char* argv[])
             continue;
         }
 
-		std::cerr << "Unknown option: " << argv[i] << std::endl;
-		printHelpMessage(programName.c_str());
-		return EXIT_FAILURE;
+        if (pathCount < 3) {
+            paths[pathCount++] = argv[i];
+        } else {
+            std::cerr << "Unknown option: " << argv[i] << std::endl;
+            printHelpMessage(programName.c_str());
+            return EXIT_FAILURE;
+        }
     }
 
-    std::string aFileName(argv[argc - 3]);
-    std::string bFileName(argv[argc - 2]);
-    std::string cFileName(argv[argc - 1]);
+    if (pathCount != 3) {
+        std::cerr << "Input or output file(s) not specified" << std::endl;
+        printHelpMessage(programName.c_str());
+        return EXIT_FAILURE;
+    } 
 
-    std::ifstream aFile(aFileName);
-    std::ifstream bFile(bFileName);
+    std::ifstream aFile(paths[0]);
+    std::ifstream bFile(paths[1]);
     if (!aFile.is_open()) {
-        std::cerr << "Could not open file " << aFileName << std::endl;
+        std::cerr << "Could not open file " << paths[0] << std::endl;
         printHelpMessage(programName.c_str());
         return EXIT_FAILURE;
     }
 
     if (!bFile.is_open()) {
-        std::cerr << "Could not open file " << bFileName << std::endl;
+        std::cerr << "Could not open file " << paths[1] << std::endl;
         printHelpMessage(programName.c_str());
         return EXIT_FAILURE;
     }
@@ -89,9 +97,9 @@ int main(int argc, char* argv[])
     aFile.close();
     bFile.close();
 
-    std::ofstream cFile(cFileName);
+    std::ofstream cFile(paths[2]);
     if (!cFile.is_open()) {
-        std::cerr << "Could not open file " << cFileName << std::endl;
+        std::cerr << "Could not open file " << paths[2] << std::endl;
         printHelpMessage(programName.c_str());
         return EXIT_FAILURE;
     }
