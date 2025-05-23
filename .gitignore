@@ -16,5 +16,6 @@ CMakeUserPresets.json
 build
 .cache
 /tests_visualization/plots
+/tests_visualization/plots2
 /tests_visualization/tests_data
 /tests_visualization/tests_data2
