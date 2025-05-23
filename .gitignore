@@ -17,3 +17,4 @@ build
 .cache
 /tests_visualization/plots
 /tests_visualization/tests_data
+/tests_visualization/tests_data2
