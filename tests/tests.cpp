@@ -41,53 +41,53 @@ static void BM_Strassen3(benchmark::State& state) {
     }
 }
 
-static void BM_Strassen3_32(benchmark::State& state) {
+static void BM_Strassen3_50(benchmark::State& state) {
     const auto size = state.range(0);
     const auto A = getUniformMatrix(size, -10.0f, 10.0f);
     const auto B = getUniformMatrix(size, -10.0f, 10.0f);
 
     for (auto _ : state) {
-        auto C = strassen3(A, B, 32);
+        auto C = strassen3(A, B, 50);
     }
 }
 
-//BENCHMARK(BM_Trivial)->RangeMultiplier(2)->Range(8, 2048)->Setup(Setup);
-//BENCHMARK(BM_Strassen3)->RangeMultiplier(2)->Range(8, 2048)->Setup(Setup);
-//BENCHMARK(BM_Strassen3_32)->RangeMultiplier(2)->Range(8, 2048)->Setup(Setup);
+static void BM_Strassen3_100(benchmark::State& state) {
+    const auto size = state.range(0);
+    const auto A = getUniformMatrix(size, -10.0f, 10.0f);
+    const auto B = getUniformMatrix(size, -10.0f, 10.0f);
 
-BENCHMARK(BM_Trivial)
-    ->Arg(100)
-    ->Arg(200)
-    ->Arg(300)
-    ->Arg(400)
-    ->Arg(500)
-    ->Arg(600)
-    ->Arg(700)
-    ->Arg(800)
-    ->Arg(900)
-    ->Arg(1000)
-    ->Setup(Setup);
-BENCHMARK(BM_Strassen3)
-->Arg(100)
-->Arg(200)
-->Arg(300)
-->Arg(400)
-->Arg(500)
-->Arg(600)
-->Arg(700)
-->Arg(800)
-->Arg(900)
-->Arg(1000)
-->Setup(Setup);
-BENCHMARK(BM_Strassen3_32)
-->Arg(100)
-->Arg(200)
-->Arg(300)
-->Arg(400)
-->Arg(500)
-->Arg(600)
-->Arg(700)
-->Arg(800)
-->Arg(900)
-->Arg(1000)
-->Setup(Setup);
+    for (auto _ : state) {
+        auto C = strassen3(A, B, 100);
+    }
+}
+
+static void BM_Strassen3_150(benchmark::State& state) {
+    const auto size = state.range(0);
+    const auto A = getUniformMatrix(size, -10.0f, 10.0f);
+    const auto B = getUniformMatrix(size, -10.0f, 10.0f);
+
+    for (auto _ : state) {
+        auto C = strassen3(A, B, 150);
+    }
+}
+
+static void BM_Strassen3_200(benchmark::State& state) {
+    const auto size = state.range(0);
+    const auto A = getUniformMatrix(size, -10.0f, 10.0f);
+    const auto B = getUniformMatrix(size, -10.0f, 10.0f);
+
+    for (auto _ : state) {
+        auto C = strassen3(A, B, 200);
+    }
+}
+
+int multiplier = 3;
+int start = 9;
+int end = 81;
+
+BENCHMARK(BM_Trivial)->RangeMultiplier(multiplier)->Range(start, end)->Setup(Setup);
+BENCHMARK(BM_Strassen3)->RangeMultiplier(multiplier)->Range(start, end)->Setup(Setup);
+BENCHMARK(BM_Strassen3_50)->RangeMultiplier(multiplier)->Range(start, end)->Setup(Setup);
+BENCHMARK(BM_Strassen3_100)->RangeMultiplier(multiplier)->Range(start, end)->Setup(Setup);
+BENCHMARK(BM_Strassen3_150)->RangeMultiplier(multiplier)->Range(start, end)->Setup(Setup);
+BENCHMARK(BM_Strassen3_200)->RangeMultiplier(multiplier)->Range(start, end)->Setup(Setup);
